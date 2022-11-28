@@ -1,9 +1,9 @@
 <template>
   <main class="main bg-dark">
     <div class="container">
-      <form class="search-form">
+      <form class="search-form" @submit.prevent="fetchWeather(false)">
         <div class="form-control">
-          <input type="text" placeholder="Search..." />
+          <input type="text" placeholder="Search..." v-model="searchValue" />
           <button>
             <svg
               width="16"
@@ -23,14 +23,55 @@
         </div>
       </form>
 
-      <section class="weather-content">
-        <h1 class="weather-city">Moscow</h1>
-        <p class="weather-temp">-5°</p>
-        <p class="weather-desc">Snow</p>
+      <section class="weather-content" v-if="weather">
+        <h1 class="weather-city">{{ weather.name }}</h1>
+        <p class="weather-temp">{{ temp }}</p>
+        <p class="weather-desc">{{ desc }}</p>
       </section>
     </div>
   </main>
 </template>
+
+<script>
+export default {
+  data() {
+    return {
+      searchValue: "",
+      location: null,
+      weather: null,
+      API_KEY: "e8910ed0b408977db95343c680294056",
+      baseUrl: "https://api.openweathermap.org/data/2.5/weather",
+    };
+  },
+  methods: {
+    async fetchWeather(byLocation = false) {
+      const url = byLocation
+        ? `${this.baseUrl}?lat=${this.location.latitude}&lon=${this.location.longitude}&appid=${this.API_KEY}&units=metric`
+        : `${this.baseUrl}?q=${this.searchValue}&appid=${this.API_KEY}&units=metric`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      this.weather = data;
+      this.searchValue = "";
+    },
+  },
+  computed: {
+    temp() {
+      return Math.round(this.weather.main.temp) + "°";
+    },
+    desc() {
+      return this.weather.weather[0].main;
+    },
+  },
+  created() {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+      this.location = { latitude, longitude };
+      await this.fetchWeather(true);
+    });
+  },
+};
+</script>
 
 <style>
 @import url(https://fonts.googleapis.com/css?family=Roboto:100,300,regular,500,700,900&display=swap);
